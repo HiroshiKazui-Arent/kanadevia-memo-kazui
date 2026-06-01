@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanadevia PM Tool — キャッチアップ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ============ サイドバー ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      Kanadevia PM Tool
+      <small>キャッチアップ用ドキュメント</small>
+    </div>
+    <nav>
+      <div class="group">はじめに</div>
+      <a href="index.html" class="active">全体像（トップ）</a>
+      <div class="group">深掘り（予定）</div>
+      <a href="#" class="todo">業務フロー：承認</a>
+      <a href="#" class="todo">ドキュメント層の使い方</a>
+      <a href="#" class="todo">Stories 41本カタログ</a>
+      <a href="#" class="todo">用語集</a>
+    </nav>
+  </aside>
+
+  <!-- ============ 本文 ============ -->
+  <main class="content">
+
+    <h1>Kanadevia PM Tool — 全体像キャッチアップ</h1>
+    <p class="lead">国内プラント工事の「成果品（図面・図書）」を作成→提出→承認→完了まで一元管理するプロジェクト管理ツール。<br>このページだけで全体の流れがつかめることを目指します。</p>
+    <p class="updated">最終更新: 2026-06-01 ／ 対象リポジトリ: <code>kanadevia-pm-tool-contexts</code>（要件定義フェーズ）</p>
+
+    <div class="callout tldr">
+      <strong>一言でいうと —</strong>
+      メール・Excel・口頭に散らばっていた<strong>工程・承認・履歴</strong>を1つのツールに集約し、
+      プラント工事の<strong>成果品ライフサイクル（作る→提出→承認→完了）</strong>を可視化・統制するシステム。
+    </div>
+
+    <!-- ============ プロジェクト基本情報 ============ -->
+    <h2 id="about">1. プロジェクト基本情報</h2>
+    <div class="cards">
+      <div class="card"><span class="tag">CLIENT</span><h4>カナデビア株式会社</h4><p>環境事業本部 設計統括部 DX推進室</p></div>
+      <div class="card"><span class="tag">PARTNER</span><h4>Arent</h4><p>開発パートナー（PM: 北）</p></div>
+      <div class="card"><span class="tag">PERIOD</span><h4>2026/2 〜 2027/3</h4><p>現フェーズ: 要件定義</p></div>
+      <div class="card"><span class="tag">BASE</span><h4>kanadevia-demo</h4><p>既存モックアップを土台に本開発へ</p></div>
+    </div>
+    <p>関連システム：<strong>Box</strong>（ファイルストレージ）／ <strong>Azure Entra ID</strong>（認証）／ <strong>Neon Postgres</strong>（DB）／ <strong>Asana</strong>（日々のタスク補助・棲み分け対象）。</p>
+
+    <!-- ============ 中心の業務フロー ============ -->
+    <h2 id="flow">2. 中心にある業務の流れ（これが背骨）</h2>
+    <p>全機能はこの1本の業務フローに紐づきます。ここを掴めば全体が読めます。</p>
+    <div class="diagram">WBS（工事を成果品単位に分解した4階層）
+  フェーズ(L1) → カテゴリ(L2) → 図書名(L3) → 成果品 = APDS(L4)
+        │
+        ▼  成果品 1 枚ごとに…
+  ① 作成中 ──── 担当者が図面/図書を作る（ファイルは Box の作業領域）
+        ▼
+  ② 提出 ────── 「ドキュメント + チェックリスト充足 + 作業時間」が
+                揃って初めて提出可
+        ▼
+  ③ 承認ゲート（DAG ベースの多段ステップ）
+        承認 / 差戻し / 条件付承認 / スキップ ／ 代理承認も可
+        差戻し → 再提出サイクル（提出回数・理由をすべて記録）
+        ▼
+  ④ 完了 ────── 承認完了時に正式な図書番号(APDS)を付与（2段階採番）
+                ファイルは Box の「承認済最終版」フォルダへ自動移動</div>
+
+    <h3>設計の DNA（初期に決まった横断原則）</h3>
+    <div class="cards">
+      <div class="card"><h4>統合キー</h4><p>成果品IDを統合キーに全てを紐づける（DEC-002）</p></div>
+      <div class="card"><h4>イベントソーシング</h4><p>ステータスを上書きせず、提出・差戻し・承認を全イベント履歴で蓄積（DEC-020）</p></div>
+      <div class="card"><h4>正本管理の徹底</h4><p>ファイルは必ずツール経由で Box にアップロード（DEC-030）</p></div>
+      <div class="card"><h4>バーチャル組織</h4><p>組織改編に強いよう、PJ単位でロール・担当を仮想管理（DEC-021/040）</p></div>
+    </div>
+
+    <!-- ============ 4層ドキュメント構造 ============ -->
+    <h2 id="layers">3. ドキュメントは「4層 + 原典」で繋がっている</h2>
+    <p>索引を単体で見ても分かりにくいのは、各ファイルが<strong>層を跨いで参照し合う</strong>設計だからです。実際の繋がりはこうです：</p>
+
+    <div class="layerflow">
+      <div class="layerstep">
+        <h4><span class="badge req">REQ</span> 要求層 — 何が欲しいか</h4>
+        <p>現場の困りごと（業務要件）と、契約スコープ・フェーズ割当。</p>
+        <div class="files">Requirement_List.md（R-001〜） ／ Feature_List.md（F-01〜）</div>
+      </div>
+      <div class="layerarrow">▼ R-xxx を F-xx が実現する</div>
+
+      <div class="layerstep">
+        <h4><span class="badge why">WHY</span> 要約層 — 何が決まったか ★SSOT</h4>
+        <p>219件の決定を時系列の表で一覧。同じ機能で番号が大きいものが最新。<strong>追記のみ・過去は書き換えない。</strong></p>
+        <div class="files">Decision_Log.md（一覧） ／ Decisions/DEC-NNN.md（背景・選択肢）</div>
+      </div>
+      <div class="layerarrow">▼ 決定が「規範」と「振る舞い」に分岐</div>
+
+      <div class="cards" style="margin-top:6px;">
+        <div class="layerstep" style="margin:0;">
+          <h4><span class="badge how">HOW</span> 仕様統合層</h4>
+          <p>機能を跨ぐ24領域の横断規範（DB・認証・採番・NFR・監査ログ・ツール棲み分け…）。現状は骨格中心で本開発前半に肉付け。</p>
+          <div class="files">Spec_Registry.md ／ Specs/SPEC-001〜024</div>
+        </div>
+        <div class="layerstep" style="margin:0;">
+          <h4><span class="badge what">WHAT</span> 実装合意層</h4>
+          <p>1 UseCase = 1 YAML の振る舞い（誰が・いつ・何を・受入基準）。横断規範と決定を画面/API単位に落とした最終地点。</p>
+          <div class="files">Story_Registry.md ／ Stories/*.yaml（41本）</div>
+        </div>
+      </div>
+      <div class="layerarrow">▼ 根拠は原典へ</div>
+      <div class="layerstep">
+        <h4><span class="badge raw">RAW</span> ローデータ層 — 原典</h4>
+        <p>議事録・課題・週報・参考資料。各決定の出所。</p>
+        <div class="files">MTG/ ／ Issues/ ／ Slack/ ／ Docs/ ／ WeeklyReports/</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>読む順番：</strong> Feature_List で契約スコープを5分眺める → Decision_Log（Why）→ Spec_Registry（How）→ Story_Registry（What）。
+      各層とも<strong>まず索引MD 1枚を通読 → 気になった行だけ実体へ</strong>が鉄則。
+    </div>
+
+    <!-- ============ Stories マップ ============ -->
+    <h2 id="stories">4. Stories 41本の全体マップ</h2>
+    <p>承認フローという背骨に、周辺機能がぶら下がる構造です。</p>
+    <table>
+      <thead><tr><th>業務領域</th><th>主な Story（抜粋）</th><th>Feature</th></tr></thead>
+      <tbody>
+        <tr><td><strong>WBS・成果品</strong></td><td>get-wbs-* / submit-wbs-deliverable / resolve-latest-deliverable</td><td><code>F-01</code></td></tr>
+        <tr><td><strong>承認フロー（背骨）</strong></td><td>submit-deliverable-step / get-pending-approvals / get-deliverable-workflow / get-role-steps</td><td><code>F-02</code></td></tr>
+        <tr><td><strong>完了条件</strong></td><td>fulfill-{document,checklist,number}-criteria（3条件が揃って完了）</td><td><code>F-01</code></td></tr>
+        <tr><td><strong>組織・体制</strong></td><td>get-org-diagram / get-persons / set-project-members / update-role-assignment</td><td><code>F-04</code></td></tr>
+        <tr><td><strong>PJ初期化</strong></td><td>create-project / initialize-project-{schedule,storage} / generate-project-wbs / set-project-milestones</td><td><code>F-03</code></td></tr>
+        <tr><td><strong>スケジュール</strong></td><td>get-gantt-chart / calculate-cpm / manage-dependency / update-schedule</td><td><code>F-08</code></td></tr>
+        <tr><td><strong>可視化・ダッシュボード</strong></td><td>get-{scurve,3point-progress,wbs-lv2-progress} / get-pj-executive-dashboard / get-sla-overdue</td><td><code>F-14,F-101/102</code></td></tr>
+        <tr><td><strong>調達・引合</strong></td><td>create-procurement-inquiry / get-procurement-{inquiries,vendors,inquiry-detail}</td><td><code>F-103</code></td></tr>
+        <tr><td><strong>マスタ・帳票</strong></td><td>import-equipment-list / export-equipment-template</td><td><code>F-07,F-16</code></td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <strong>棄却された機能に注意：</strong> チャット・RACI などは Stories 対象外。
+      「軽いコミュニケーションは Asana 等の外部ツール、承認フロー内のコメントは<strong>削除・編集不可の正式証跡</strong>のみ」という棲み分け（DEC-087/095）が効いている。
+    </div>
+
+    <!-- ============ フェーズ計画 ============ -->
+    <h2 id="phases">5. フェーズ計画</h2>
+    <table>
+      <thead><tr><th>フェーズ</th><th>時期</th><th>対象</th><th>ゴール</th></tr></thead>
+      <tbody>
+        <tr><td><strong>フェーズ1</strong><br>(初期リリース)</td><td>5〜9月</td><td>X-01a, X-02a, F-01〜F-10, F-13, F-18</td><td>認証・インフラ基盤 + コア機能（WBS/承認/組織/Box/工数/マイルストーン/検図）</td></tr>
+        <tr><td><strong>フェーズ2</strong><br>(最終リリース)</td><td>9月〜2027/3</td><td>F-11, F-12, F-14〜F-16</td><td>ダッシュボード・SLA・通知・帳票・調達連携</td></tr>
+        <tr><td><strong>フェーズ3</strong></td><td>2027/1〜3</td><td>X-01b, X-02b</td><td>社外ユーザー参加・災害復旧・SAP連携</td></tr>
+        <tr><td><strong>フェーズ4</strong></td><td>2027/7〜</td><td>X-01c, F-17 候補</td><td>ユーザー自動同期・AI予測</td></tr>
+      </tbody>
+    </table>
+    <p class="updated">※ 正式な Phase 区分は DEC-192 を参照（3段構成に整理済み）。</p>
+
+    <!-- ============ 縦に辿る例 ============ -->
+    <h2 id="trace">6. 「全体の流れ」を自分で辿るには（実践例）</h2>
+    <p>1本の業務フローを<strong>縦に貫く</strong>のが一番速い。例：「成果品の承認」を追う場合 —</p>
+    <div class="diagram">Feature_List  F-02（承認フロー）が何を約束しているか
+      ↓
+Requirement_List  R-007〜010（承認定義・アクション・代理・取下げ）
+      ↓
+Stories/submit-deliverable-step.yaml（受入基準まで具体化）
+      ↓  notes / provenance から
+Decisions/DEC-034（全イベントログ保持）, DEC-087/095（コメント = 証跡）
+      ↓  横断規範は
+Specs/SPEC-010（監査ログ・改ざん不能）, SPEC-006（認証・職務分離）</div>
+
+    <footer>
+      Kanadevia PM Tool キャッチアップドキュメント ／ メモ用リポジトリ <code>../memo</code><br>
+      このページは要件定義フェーズ時点の理解をまとめたもの。決定の最新は必ず <code>Decision_Log.md</code>（SSOT）を参照。
+    </footer>
+
+  </main>
+</div>
+</body>
+</html>
